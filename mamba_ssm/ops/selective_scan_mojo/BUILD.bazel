@@ -1,0 +1,81 @@
+load("//bazel:api.bzl", "mojo_library", "mojo_binary", "mojo_test", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+# Mojo library containing the selective scan implementation
+mojo_library(
+    name = "selective_scan_mojo_lib",
+    srcs = [
+        "selective_scan_params.mojo",
+        "selective_scan_utils.mojo", 
+        "selective_scan_kernels.mojo",
+        "selective_scan_forward.mojo",
+        "selective_scan_op.mojo",
+    ],
+    deps = [
+        "@mojo//:compiler",
+        "@mojo//:layout", 
+        "@mojo//:stdlib",
+        "@mojo//:tensor_internal",
+        "@mojo//:gpu",
+        "@mojo//:gpu_internal",
+    ],
+)
+
+# Python integration library
+py_library(
+    name = "selective_scan_mojo_py",
+    srcs = [
+        "selective_scan_python.py",
+        "__init__.py",
+    ],
+    deps = [
+        requirement("torch"),
+        requirement("numpy"),
+    ],
+    data = [":selective_scan_mojo_lib"],
+)
+
+# Test targets
+mojo_test(
+    name = "test_selective_scan_params",
+    srcs = ["tests/test_selective_scan_params.mojo"],
+    deps = [":selective_scan_mojo_lib"],
+)
+
+# Integration test
+py_test(
+    name = "test_selective_scan_integration",
+    srcs = ["tests/test_selective_scan_integration.py"],
+    deps = [
+        ":selective_scan_mojo_py",
+        requirement("torch"),
+        requirement("numpy"),
+    ],
+    data = [":selective_scan_mojo_lib"],
+)
+
+# Benchmark target
+py_binary(
+    name = "benchmark_selective_scan",
+    srcs = ["benchmarks/benchmark_selective_scan.py"],
+    deps = [
+        ":selective_scan_mojo_py",
+        requirement("torch"),
+        requirement("numpy"),
+        requirement("timeit"),
+    ],
+    data = [":selective_scan_mojo_lib"],
+)
+
+# Filegroup for all sources
+filegroup(
+    name = "selective_scan_mojo_sources",
+    srcs = glob([
+        "*.mojo",
+        "tests/*.mojo",
+        "*.py",
+        "tests/*.py",
+        "benchmarks/*.py",
+    ]),
+) 

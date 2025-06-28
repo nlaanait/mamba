@@ -18,6 +18,7 @@ except ImportError:
 from mamba_ssm.ops.triton.layer_norm import _layer_norm_fwd
 
 import selective_scan_cuda
+from mamba_ssm.ops.selective_scan_mojo import selective_scan_mojo_forward
 
 
 class SelectiveScanFn(torch.autograd.Function):
@@ -417,3 +418,8 @@ def mamba_inner_ref(
             C = rearrange(C, "(b l) (dstate two) -> b dstate (l two)", l=L, two=2).contiguous()
     y = selective_scan_fn(x, delta, A, B, C, D, z=z, delta_bias=delta_bias, delta_softplus=True)
     return F.linear(rearrange(y, "b d l -> b l d"), out_proj_weight, out_proj_bias)
+
+
+output = selective_scan_mojo_forward(
+    u, delta, A, B, C, D=D, z=z, delta_bias=delta_bias, delta_softplus=True
+)
